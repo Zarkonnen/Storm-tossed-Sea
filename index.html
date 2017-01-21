@@ -18,10 +18,13 @@ var shipRot = 0;
 var shipTilt = 0;
 var dShipTilt = 0;
 var t = 0;
-var windRot = 0.7;
-var windStrength = 0.1;
-var waveRot = 0.8;
-var waveStrength = 0.3;
+var windRot = Math.random() * Math.PI * 2;
+var windRotTarget = Math.random() * Math.PI * 2;
+var windStrength = 0.5;
+var waveRot = Math.random() * Math.PI * 2;
+var waveRotTarget = Math.random() * Math.PI * 2;
+var waveStrength = 0.1
+var waveP = 0.0002;
 
 var shipColliders = [
     {x: 1000, y: 1000, r: 28},
@@ -39,6 +42,22 @@ function reset() {
 }
 
 function tick(ms) {
+    windStrength = 0.5 + t / 1000.0 * 0.01;
+    waveStrength = 0.1 + t / 1000.0 * 0.001;
+    
+    if (Math.random() < (0.00001 + t / 1000 * 0.000001) * ms) {
+        windRotTarget = Math.random() * Math.PI * 2;
+    }
+    
+    if (Math.random() < (0.00001 + t / 1000 * 0.000005) * ms) {
+        waveRotTarget = Math.random() * Math.PI * 2;
+    }
+    
+    var mix = Math.pow(0.999995, ms * (1 + t / 30000.0));
+    windRot = windRot * mix + windRotTarget * (1 - mix);
+    mix = Math.pow(0.99999, ms * (1 + t / 30000.0));
+    waveRot = waveRot * mix + waveRotTarget * (1 - mix);
+
     if (down("A")) {
         shipRot -= ms * 0.001;
     }
@@ -54,34 +73,46 @@ function tick(ms) {
         particles.push({
             x: Math.cos(windRot) * px - Math.sin(windRot) * py + 1000,
             y: Math.sin(windRot) * px + Math.cos(windRot) * py + 1000,
-            life: 4000 / windStrength
+            life: 20000 / windStrength
         });
     }
     
-    if (Math.random() < ms * 0.001) {
+    if (Math.random() < ms * waveP) {
         var wx = -1200;
         var wy = Math.random() * 1000 - 500;
         var sz = (waveStrength + 0.1) * (5 + Math.random() * 2);
-        waves.push({
-            x: Math.cos(waveRot) * wx - Math.sin(waveRot) * wy + 1000,
-            y: Math.sin(waveRot) * wx + Math.cos(waveRot) * wy + 1000,
-            dx: Math.cos(waveRot) * waveStrength,
-            dy: Math.sin(waveRot) * waveStrength,
-            angle: waveRot,
-            life: 3000 / waveStrength,
-            size: sz,
-            bubbles: [],
-            darkBubbles: [],
-            colliders: [
-                {x: 0, y: 0, d: 0, r: sz * 30},
-                {x: 0, y: 0, d: 140, r: sz * 20},
-                {x: 0, y: 0, d: -140, r: sz * 20},
-                {x: 0, y: 0, d: 250, r: sz * 18},
-                {x: 0, y: 0, d: -250, r: sz * 18},
-                {x: 0, y: 0, d: 350, r: sz * 15},
-                {x: 0, y: 0, d: -350, r: sz * 15}
-            ]
-        });
+        var waveX = Math.cos(waveRot) * wx - Math.sin(waveRot) * wy + 1000;
+        var waveY = Math.sin(waveRot) * wx + Math.cos(waveRot) * wy + 1000;
+        var tooClose = false;
+        for (var i = 0; i < waves.length; i++) {
+            var w = waves[i];
+            var dSq = (w.x - waveX) * (w.x - waveX) + (w.y - waveY) * (w.y - waveY);
+            if (dSq * dSq < 300 * 300) {
+                tooClose = true;
+            }
+        }
+        if (!tooClose) {
+            waves.push({
+                x: waveX,
+                y: waveY,
+                dx: Math.cos(waveRot) * waveStrength,
+                dy: Math.sin(waveRot) * waveStrength,
+                angle: waveRot,
+                life: 3000 / waveStrength,
+                size: sz,
+                bubbles: [],
+                darkBubbles: [],
+                colliders: [
+                    {x: 0, y: 0, d: 0, r: sz * 30},
+                    {x: 0, y: 0, d: 140, r: sz * 20},
+                    {x: 0, y: 0, d: -140, r: sz * 20},
+                    {x: 0, y: 0, d: 250, r: sz * 18},
+                    {x: 0, y: 0, d: -250, r: sz * 18},
+                    {x: 0, y: 0, d: 350, r: sz * 15},
+                    {x: 0, y: 0, d: -350, r: sz * 15}
+                ]
+            });
+        }
     }
     
     if (Math.random() < ms * 0.02) {
