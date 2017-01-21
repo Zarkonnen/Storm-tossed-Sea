@@ -18,9 +18,9 @@ var shipRot = 0;
 var shipTilt = 0;
 var t = 0;
 var windRot = 0.7;
-var windStrength = 1;
-var waveRot = 1.8;
-var waveStrength = 0.3;
+var windStrength = 3;
+var waveRot = 0.8;
+var waveStrength = 0.1;
 
 var particles = [];
 var waves = [];
@@ -39,6 +39,7 @@ function tick(ms) {
     }
 
     t += ms;
+    waveRot = Math.random() * Math.PI * 2;
     if (Math.random() < ms * 0.01) {
         var px = -2000;
         var py = Math.random() * 2000 - 1000;
@@ -49,7 +50,7 @@ function tick(ms) {
         });
     }
     
-    if (Math.random() < ms * 0.01) {
+    if (Math.random() < ms * 0.003) {
         var wx = -2000;
         var wy = Math.random() * 2000 - 1000;
         waves.push({
@@ -59,8 +60,9 @@ function tick(ms) {
             dy: Math.sin(waveRot) * waveStrength,
             angle: waveRot,
             life: 6000 / waveStrength,
-            size: waveStrength * (3 + Math.random() * 2),
-            bubbles: []
+            size: (waveStrength + 0.1) * (5 + Math.random() * 2),
+            bubbles: [],
+            darkBubbles: []
         });
     }
     
@@ -79,33 +81,73 @@ function tick(ms) {
         if (w.life > 0) {
             for (var xx = 0; xx < ms * 0.35; xx++) {
                 var dy = (Math.random() - 0.5) * 100 * w.size;
-                var dx = -Math.pow(Math.abs(dy) / 50, 2) * 20;
+                var dx = -Math.pow(Math.abs(dy) / 50, 2) * 10;
                 w.bubbles.push({
                     x: w.x + Math.cos(w.angle) * dx - Math.sin(w.angle) * dy,
                     y: w.y + Math.sin(w.angle) * dx + Math.cos(w.angle) * dy,
                     life: 100 + Math.random() * 400 - Math.abs(dy),
                     age: 0,
-                    size: 20 * w.size - Math.abs(dy) / 4
+                    size: 15 * w.size - Math.abs(dy) / 6
                 });
             }
-            for (var j = 0; j < w.bubbles.length; j++) {
-                c.fillStyle = "#5196fc";
-                var b = w.bubbles[j];
+            for (var xx = 0; xx < ms * 0.05; xx++) {
+                var dy = (Math.random() - 0.5) * 80 * w.size;
+                var dx = -Math.pow(Math.abs(dy) / 50, 2) * 10 - 10 * w.size;
+                w.darkBubbles.push({
+                    x: w.x + Math.cos(w.angle) * dx - Math.sin(w.angle) * dy,
+                    y: w.y + Math.sin(w.angle) * dx + Math.cos(w.angle) * dy,
+                    life: 300 + Math.random() * 600 - Math.abs(dy),
+                    age: 0,
+                    size: 40 * w.size - Math.abs(dy) / 2
+                });
+            }
+            for (var j = 0; j < w.darkBubbles.length; j++) {
+                c.fillStyle = "#101d30";
+                var b = w.darkBubbles[j];
                 b.age += ms;
                 if (b.age < b.life) {
-                    var sz = (1.0 * b.size * (b.life - b.age)) / b.life + 5;
-                    //c.fillRect(b.x - sz / 2, b.y - sz / 2, sz, sz);
+                    var sz = 0;
+                    if (b.age < b.life * 0.2) {
+                        sz = b.size * b.age / (b.life * 0.2) + 5;
+                    } else {
+                        sz = b.size * (b.life * 0.8 - (b.age - b.life * 0.2)) / (b.life * 0.8) + 5;
+                    }
+                    //(1.0 * b.size * (b.life - b.age)) / b.life + 5;
                     c.beginPath();
                     c.arc(b.x, b.y, sz / 2, 0, 2 * Math.PI, false);
                     c.fill();
                 } else {
-                    w.bubbles.splice(j, 1);
+                    w.darkBubbles.splice(j, 1);
                     j--;
                 }
             }
         } else {
             waves.splice(i, 1);
             i--;
+        }
+    }
+    
+    for (var i = 0; i < waves.length; i++) {
+        var w = waves[i];
+        for (var j = 0; j < w.bubbles.length; j++) {
+            c.fillStyle = "#5196fc";
+            var b = w.bubbles[j];
+            b.age += ms;
+            if (b.age < b.life) {
+                //var sz = (1.0 * b.size * (b.life - b.age)) / b.life + 5;
+                var sz = 0;
+                if (b.age < b.life * 0.2) {
+                    sz = b.size * b.age / (b.life * 0.2) + 5;
+                } else {
+                    sz = b.size * (b.life * 0.8 - (b.age - b.life * 0.2)) / (b.life * 0.8) + 5;
+                }
+                c.beginPath();
+                c.arc(b.x, b.y, sz / 2, 0, 2 * Math.PI, false);
+                c.fill();
+            } else {
+                w.bubbles.splice(j, 1);
+                j--;
+            }
         }
     }
     
