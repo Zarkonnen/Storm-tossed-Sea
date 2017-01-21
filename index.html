@@ -6,12 +6,28 @@
         <script src="howler.min.js"></script>
     </head>
     <body style="margin: 0; padding: 0; background: #101d30; text-align: center;">
-        <canvas width="500" height="500" allowfullscreen="true" id="gameCanvas" style="margin-top: 10px;"></canvas>
+        <canvas width="500" height="500" allowfullscreen="true" id="gameCanvas" style="margin-top: 100px;"></canvas>
         <script>
 
 function hwl(name, volume) {
     return new Howl({src: ["sounds/" + name + ".ogg", "sounds/" + name + ".mp3", "sounds/" + name + ".wav"], volume: volume || 1});
 }
+
+// Sounds
+var sHowling = hwl("howling", 0.001);
+var sStormwind = hwl("stormwind", 0.001);
+var sCreaking = hwl("creaking", 0.001);
+var sWaves = hwl("waves", 0.001);
+var sLightning = hwl("lightning", 0.5);
+var sGurgling = hwl("gurgling", 0.7);
+sHowling.loop(true);
+sHowling.play();
+sStormwind.loop(true);
+sStormwind.play();
+sCreaking.loop(true);
+sCreaking.play();
+sWaves.loop(true);
+sWaves.play();
 
 // State
 var shipRot = 0;
@@ -25,6 +41,11 @@ var waveRot = Math.random() * Math.PI * 2;
 var waveRotTarget = Math.random() * Math.PI * 2;
 var waveStrength = 0.1
 var waveP = 0.0002;
+var sCreakVol = 0.001;
+var lightningP = 0;
+var lightning = 0;
+var sWavesVol = 0.001;
+var dead = false;
 
 var shipColliders = [
     {x: 1000, y: 1000, r: 28},
@@ -42,20 +63,42 @@ function reset() {
 }
 
 function tick(ms) {
-    windStrength = 0.5 + t / 1000.0 * 0.01;
-    waveStrength = 0.1 + t / 1000.0 * 0.001;
+    ms = Math.min(ms, 100);
+    if (!dead && Math.abs(shipTilt) > Math.PI / 2) {
+        dead = true;
+        sGurgling.play();
+        sHowling.fade(sHowling.volume(), 0.00001, 1000);
+        sStormwind.fade(sStormwind.volume(), 0.00001, 1000);
+        sWaves.fade(sWaves.volume(), 0.00001, 1000);
+        sCreaking.fade(sCreaking.volume(), 0.00001, 1000);
+    }
     
-    if (Math.random() < (0.00001 + t / 1000 * 0.000001) * ms) {
+    if (dead) {
+        c.resetTransform();
+        c.fillStyle = "#101d30";
+        c.fillRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+
+    windStrength = 0.5 + t / 1000.0 * 0.02;
+    waveStrength = 0.1 + t / 1000.0 * 0.0012;
+    waveP = 0.0002 + t / 1000.0 * 0.00001;
+    lightningP = t / 1000.0 * 0.0000001;
+    
+    sStormwind.volume(Math.min(1, windStrength * 0.1));
+    sHowling.volume(Math.min(1, Math.max(0.001, windStrength * 0.2 - 0.3)));
+    
+    if (Math.random() < (0.00001 + t / 1000 * 0.00001) * ms) {
         windRotTarget = Math.random() * Math.PI * 2;
     }
     
-    if (Math.random() < (0.00001 + t / 1000 * 0.000005) * ms) {
+    if (Math.random() < (0.00001 + t / 1000 * 0.00005) * ms) {
         waveRotTarget = Math.random() * Math.PI * 2;
     }
     
-    var mix = Math.pow(0.999995, ms * (1 + t / 30000.0));
+    var mix = Math.pow(0.999995, ms * (1 + t / 10000.0));
     windRot = windRot * mix + windRotTarget * (1 - mix);
-    mix = Math.pow(0.99999, ms * (1 + t / 30000.0));
+    mix = Math.pow(0.99999, ms * (1 + t / 10000.0));
     waveRot = waveRot * mix + waveRotTarget * (1 - mix);
 
     if (down("A")) {
@@ -66,6 +109,9 @@ function tick(ms) {
     }
 
     t += ms;
+    if (lightning > -10000) {
+        lightning -= ms;
+    }
     //waveRot = Math.random() * Math.PI * 2;
     if (Math.random() < ms * 0.01) {
         var px = -2000;
@@ -75,6 +121,11 @@ function tick(ms) {
             y: Math.sin(windRot) * px + Math.cos(windRot) * py + 1000,
             life: 20000 / windStrength
         });
+    }
+    
+    if (lightning <= -1000 && Math.random() < ms * lightningP) {
+        lightning = Math.random() * 200 + 50;
+        sLightning.play();
     }
     
     if (Math.random() < ms * waveP) {
@@ -87,7 +138,7 @@ function tick(ms) {
         for (var i = 0; i < waves.length; i++) {
             var w = waves[i];
             var dSq = (w.x - waveX) * (w.x - waveX) + (w.y - waveY) * (w.y - waveY);
-            if (dSq * dSq < 300 * 300) {
+            if (dSq < 300 * 300) {
                 tooClose = true;
             }
         }
@@ -162,20 +213,26 @@ function tick(ms) {
             if (collidingWithShip) {
                 var waveForce = Math.sin(shipRot - w.angle) * w.size * 0.000015;
                 fShipTilt += waveForce;
+                sWavesVol += (Math.abs(Math.sin(shipRot - w.angle)) * 0.3 + 0.4) * 0.001 * ms;
             }
         }
     }
+    
+    sWavesVol = 0.99 * Math.min(1, sWavesVol);
+    sWaves.volume(sWavesVol);
     
     // Ship tilt spring.
     fShipTilt -= shipTilt * 0.0001;
     // Friction
     fShipTilt -= dShipTilt * 0.001;
+    sCreakVol = Math.max(Math.min(1, Math.abs(fShipTilt * fShipTilt * 2000000000)), sCreakVol * 0.95);
+    sCreaking.volume(sCreakVol);
     
     dShipTilt += fShipTilt * ms;
     shipTilt += dShipTilt * ms;
     
     c.resetTransform();
-    c.fillStyle = Math.abs(shipTilt) > 0.8 ? "#101d30" : "#305a96";
+    c.fillStyle = Math.abs(shipTilt) > 0.8 ? "#101d30" : lightning > 0 ? "#5196fc" : "#203c63";
     c.fillRect(0, 0, canvas.width, canvas.height);
     
     reset();
