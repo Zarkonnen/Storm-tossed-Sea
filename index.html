@@ -16,11 +16,12 @@ function hwl(name, volume) {
 // State
 var shipRot = 0;
 var shipTilt = 0;
+var dShipTilt = 0;
 var t = 0;
 var windRot = 0.7;
-var windStrength = 1.1;
+var windStrength = 0.1;
 var waveRot = 0.8;
-var waveStrength = 0.7;
+var waveStrength = 0.3;
 
 var shipColliders = [
     {x: 1000, y: 1000, r: 28},
@@ -88,8 +89,9 @@ function tick(ms) {
     shipColliders[2].y = 1000 - Math.sin(shipRot) * 60;
     
     // Forces on the ship.
-    var windForce = Math.sin(shipRot - windRot) * windStrength * 0.35;
-    shipTilt = windForce;
+    var fShipTilt = 0;
+    var windForce = Math.sin(shipRot - windRot) * windStrength * 0.00005;
+    fShipTilt = windForce;
     for (var i = 0; i < waves.length; i++) {
         var w = waves[i];
         w.x += w.dx * ms;
@@ -111,16 +113,23 @@ function tick(ms) {
                     collidingWithShip |= d < coll.r + coll2.r;
                 }
             }
-            console.log(collidingWithShip);
             if (collidingWithShip) {
-                var waveForce = Math.sin(shipRot - w.angle) * w.size * 0.1;
-                shipTilt += waveForce;
+                var waveForce = Math.sin(shipRot - w.angle) * w.size * 0.000015;
+                fShipTilt += waveForce;
             }
         }
     }
     
+    // Ship tilt spring.
+    fShipTilt -= shipTilt * 0.0001;
+    // Friction
+    fShipTilt -= dShipTilt * 0.001;
+    
+    dShipTilt += fShipTilt * ms;
+    shipTilt += dShipTilt * ms;
+    
     c.resetTransform();
-    c.fillStyle = "#305a96";
+    c.fillStyle = Math.abs(shipTilt) > 0.8 ? "#101d30" : "#305a96";
     c.fillRect(0, 0, canvas.width, canvas.height);
     
     reset();
