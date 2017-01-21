@@ -31,6 +31,7 @@ var shipColliders = [
 
 var particles = [];
 var waves = [];
+var wavelets = [];
 
 function reset() {
     c.resetTransform();
@@ -46,7 +47,7 @@ function tick(ms) {
     }
 
     t += ms;
-    waveRot = Math.random() * Math.PI * 2;
+    //waveRot = Math.random() * Math.PI * 2;
     if (Math.random() < ms * 0.01) {
         var px = -2000;
         var py = Math.random() * 2000 - 1000;
@@ -80,6 +81,20 @@ function tick(ms) {
                 {x: 0, y: 0, d: 350, r: sz * 15},
                 {x: 0, y: 0, d: -350, r: sz * 15}
             ]
+        });
+    }
+    
+    if (Math.random() < ms * 0.02) {
+        var sz = (5 + Math.random() * 2) * 0.15;
+        wavelets.push({
+            x: Math.random() * 2400 - 200,
+            y: Math.random() * 2400 - 200,
+            dx: Math.cos(waveRot) * waveStrength,
+            dy: Math.sin(waveRot) * waveStrength,
+            angle: waveRot,
+            life: 1000 + Math.random() * 300,
+            size: sz,
+            darkBubbles: []
         });
     }
     
@@ -133,6 +148,48 @@ function tick(ms) {
     c.fillRect(0, 0, canvas.width, canvas.height);
     
     reset();
+    
+    for (var i = 0; i < wavelets.length; i++) {
+        var w = wavelets[i];
+        w.x += w.dx * ms;
+        w.y += w.dy * ms;
+        w.life -= ms;
+        if (w.life <= 0) {
+            wavelets.splice(i, 1);
+            i--;
+        } else {
+            var dy = (Math.random() - 0.5) * 170 * w.size;
+            var dx = -Math.pow(Math.abs(dy) / 200, 2) * 40 - 20 * w.size;
+            w.darkBubbles.push({
+                x: w.x + Math.cos(w.angle) * dx - Math.sin(w.angle) * dy,
+                y: w.y + Math.sin(w.angle) * dx + Math.cos(w.angle) * dy,
+                life: Math.min(w.life * Math.random(), 300 + Math.random() * 200 - Math.abs(dy)),
+                age: 0,
+                size: 20 * w.size - Math.abs(dy) / 8
+            });
+            for (var j = 0; j < w.darkBubbles.length; j++) {
+                c.fillStyle = "#5196fc";
+                var b = w.darkBubbles[j];
+                b.age += ms;
+                if (b.age < b.life) {
+                    var sz = 0;
+                    if (b.age < b.life * 0.2) {
+                        sz = b.size * b.age / (b.life * 0.2) + 10;
+                    } else {
+                        sz = b.size * (b.life * 0.8 - (b.age - b.life * 0.2)) / (b.life * 0.8) + 10;
+                    }
+                    //(1.0 * b.size * (b.life - b.age)) / b.life + 5;
+                    c.beginPath();
+                    c.arc(b.x, b.y, sz / 2, 0, 2 * Math.PI, false);
+                    c.fill();
+                } else {
+                    w.darkBubbles.splice(j, 1);
+                    j--;
+                }
+            }
+        }
+    }
+    
     for (var i = 0; i < waves.length; i++) {
         var w = waves[i];
         for (var xx = 0; xx < ms; xx++) {
