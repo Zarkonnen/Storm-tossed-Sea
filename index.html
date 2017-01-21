@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html style="margin: 0; padding: 0;">
+    <head>
+        <title>Game</title>
+        <script src="jquery-3.1.1.min.js"></script>
+        <script src="howler.min.js"></script>
+    </head>
+    <body style="margin: 0; padding: 0; background: #101d30; text-align: center;">
+        <canvas width="500" height="500" allowfullscreen="true" id="gameCanvas" style="margin-top: 10px;"></canvas>
+        <script>
+
+function hwl(name, volume) {
+    return new Howl({src: ["sounds/" + name + ".ogg", "sounds/" + name + ".mp3", "sounds/" + name + ".wav"], volume: volume || 1});
+}
+
+// State
+var shipRot = 0;
+var shipTilt = 0;
+var t = 0;
+var windRot = 0.7;
+var windStrength = 3;
+var waveRot = 1.8;
+var waveStrength = 1;
+
+var particles = [];
+var waves = [];
+
+function reset() {
+    c.resetTransform();
+    c.scale(0.25, 0.25);
+}
+
+function tick(ms) {
+    if (down("A")) {
+        shipRot -= ms * 0.001;
+    }
+    if (down("D")) {
+        shipRot += ms * 0.001;
+    }
+
+    t += ms;
+    if (Math.random() < ms * 0.01) {
+        var px = -1000;
+        var py = Math.random() * 2000 - 1000;
+        particles.push({
+            x: Math.cos(windRot) * px - Math.sin(windRot) * py + 1000,
+            y: Math.sin(windRot) * px + Math.cos(windRot) * py + 1000,
+            dx: Math.cos(windRot) * windStrength,
+            dy: Math.sin(windRot) * windStrength,
+            life: 4000 / windStrength
+        });
+    }
+    
+    if (Math.random() < ms * 0.001) {
+        var wx = -2000;
+        var wy = Math.random() * 2000 - 1000;
+        waves.push({
+            x: Math.cos(waveRot) * wx - Math.sin(waveRot) * wy + 1000,
+            y: Math.sin(waveRot) * wx + Math.cos(waveRot) * wy + 1000,
+            dx: Math.cos(waveRot) * waveStrength,
+            dy: Math.sin(waveRot) * waveStrength,
+            angle: waveRot,
+            life: 6000 / waveStrength,
+            size: waveStrength
+        });
+    }
+    
+    // Forces on the ship.
+    var windForce = Math.sin(shipRot - windRot) * windStrength * 0.35;
+    shipTilt = windForce;//Math.sin(t * 0.001) * Math.PI / 2;
+    c.resetTransform();
+    c.fillStyle = "#305a96";
+    c.fillRect(0, 0, canvas.width, canvas.height);
+    
+    for (var i = 0; i < waves.length; i++) {
+        var w = waves[i];
+        w.x += w.dx * ms;
+        w.y += w.dy * ms;
+        w.life -= ms;
+        if (w.life > 0) {
+            reset();
+            var wNum = Math.floor(w.life / 300) % 2;
+            c.translate(w.x, w.y);
+            c.rotate(w.angle);
+            c.scale(w.size, w.size);
+            img("wave" + wNum, 0, 0);
+        } else {
+            waves.splice(i, 1);
+            i--;
+        }
+    }
+    
+    reset();
+    c.translate(1000, 1000);
+    c.rotate(shipRot);
+    var shipN = 0;
+    if (shipTilt < -Math.PI / 12) {
+        shipN = -1;
+    }
+    if (shipTilt < -Math.PI / 6) {
+        shipN = -2;
+    }
+    if (shipTilt > Math.PI / 12) {
+        shipN = 1;
+    }
+    if (shipTilt > Math.PI / 6) {
+        shipN = 2;
+    }
+    img("ship" + shipN, 0, 30 * Math.sin(shipTilt));
+    var mastL = 200 * Math.sin(shipTilt);
+    c.fillStyle = "#5196fc";
+    c.fillRect(-15, -mastL, 30, mastL);
+    reset();
+    for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        p.x += p.dx * ms;
+        p.y += p.dy * ms;
+        p.life -= ms;
+        if (p.life > 0) {
+            c.fillRect(p.x, p.y, 10, 10);
+        } else {
+            particles.splice(i, 1);
+            i--;
+        }
+    }
+}
+
+var images = {};
+
+function img(img, x, y) {
+    if (img == null) { return; }
+    if (!images[img]) {
+        images[img] = new Image();
+        images[img].src = "graphics/" + img + ".png";
+    }
+    c.drawImage(images[img], x - images[img].width / 2, y - images[img].height / 2);
+}
+
+var canvas = document.getElementById("gameCanvas");
+var c = canvas.getContext("2d");
+var keys = {};
+var keyCodes = {};
+var keysDown = {};
+var keyCodesDown = {};
+var click = null;
+var mouseDown = false;
+var cursor = {x: 300, y: 300};
+
+// Listen for key presses.
+function canvasKeyUp(e) {
+    keyCodes[e.which] = true;
+    keys[String.fromCharCode(e.which)] = true;
+    
+    keyCodesDown[e.which] = false;
+    keysDown[String.fromCharCode(e.which)] = false;
+}
+
+function canvasKeyDown(e) {
+    keyCodesDown[e.which] = true;
+    keysDown[String.fromCharCode(e.which)] = true;
+}
+
+function pressed(key) {
+    return !!keys[key] || !!keyCodes[key];
+}
+
+function down(key) {
+    return !!keysDown[key] || !!keyCodesDown[key];
+}
+
+$('body').keyup(canvasKeyUp).keydown(canvasKeyDown);
+
+// Listen for mouse stuff.
+function canvasClick(e) {
+    click = { "x": e.offsetX, "y": e.offsetY };
+}
+
+function canvasMouseDown(e) {
+    mouseDown = true;
+}
+
+function canvasMouseUp(e) {
+    mouseDown = false;
+}
+
+function canvasMove(e) {
+    cursor = { "x": e.offsetX, "y": e.offsetY };
+}
+
+$('#gameCanvas').click(canvasClick).mousemove(canvasMove).mousedown(canvasMouseDown).mouseup(canvasMouseUp);
+
+// Set up game loop.
+var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+var lastUpdate = new Date().getTime();
+
+function nextFrame() {
+    var currentTime = new Date().getTime();
+    tick(currentTime - lastUpdate);
+    keys = {};
+    keyCodes = {};
+    click = null;
+    lastUpdate = currentTime;
+    requestAnimationFrame(nextFrame);
+}
+
+// Once everything is set up, start game loop.
+requestAnimationFrame(nextFrame);
+ 
+/*canvas.addEventListener("click", function() {
+    if (canvas.webkitRequestFullScreen) {
+        canvas.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);
+    } else if (canvas.mozRequestFullScreen) {
+        canvas.mozRequestFullScreen();
+    } else if (canvas.requestFullScreen) {
+        canvas.requestFullScreen();
+    }
+});*/
+        </script>
+    </body>
+</html>
