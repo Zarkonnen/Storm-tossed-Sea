@@ -18,9 +18,9 @@ var shipRot = 0;
 var shipTilt = 0;
 var t = 0;
 var windRot = 0.7;
-var windStrength = 3;
+var windStrength = 1;
 var waveRot = 1.8;
-var waveStrength = 1;
+var waveStrength = 0.3;
 
 var particles = [];
 var waves = [];
@@ -40,18 +40,16 @@ function tick(ms) {
 
     t += ms;
     if (Math.random() < ms * 0.01) {
-        var px = -1000;
+        var px = -2000;
         var py = Math.random() * 2000 - 1000;
         particles.push({
             x: Math.cos(windRot) * px - Math.sin(windRot) * py + 1000,
             y: Math.sin(windRot) * px + Math.cos(windRot) * py + 1000,
-            dx: Math.cos(windRot) * windStrength,
-            dy: Math.sin(windRot) * windStrength,
             life: 4000 / windStrength
         });
     }
     
-    if (Math.random() < ms * 0.001) {
+    if (Math.random() < ms * 0.01) {
         var wx = -2000;
         var wy = Math.random() * 2000 - 1000;
         waves.push({
@@ -61,7 +59,8 @@ function tick(ms) {
             dy: Math.sin(waveRot) * waveStrength,
             angle: waveRot,
             life: 6000 / waveStrength,
-            size: waveStrength
+            size: waveStrength * (3 + Math.random() * 2),
+            bubbles: []
         });
     }
     
@@ -78,12 +77,32 @@ function tick(ms) {
         w.y += w.dy * ms;
         w.life -= ms;
         if (w.life > 0) {
-            reset();
-            var wNum = Math.floor(w.life / 300) % 2;
-            c.translate(w.x, w.y);
-            c.rotate(w.angle);
-            c.scale(w.size, w.size);
-            img("wave" + wNum, 0, 0);
+            for (var xx = 0; xx < ms * 0.35; xx++) {
+                var dy = (Math.random() - 0.5) * 100 * w.size;
+                var dx = -Math.pow(Math.abs(dy) / 50, 2) * 20;
+                w.bubbles.push({
+                    x: w.x + Math.cos(w.angle) * dx - Math.sin(w.angle) * dy,
+                    y: w.y + Math.sin(w.angle) * dx + Math.cos(w.angle) * dy,
+                    life: 100 + Math.random() * 400 - Math.abs(dy),
+                    age: 0,
+                    size: 20 * w.size - Math.abs(dy) / 4
+                });
+            }
+            for (var j = 0; j < w.bubbles.length; j++) {
+                c.fillStyle = "#5196fc";
+                var b = w.bubbles[j];
+                b.age += ms;
+                if (b.age < b.life) {
+                    var sz = (1.0 * b.size * (b.life - b.age)) / b.life + 5;
+                    //c.fillRect(b.x - sz / 2, b.y - sz / 2, sz, sz);
+                    c.beginPath();
+                    c.arc(b.x, b.y, sz / 2, 0, 2 * Math.PI, false);
+                    c.fill();
+                } else {
+                    w.bubbles.splice(j, 1);
+                    j--;
+                }
+            }
         } else {
             waves.splice(i, 1);
             i--;
@@ -111,13 +130,19 @@ function tick(ms) {
     c.fillStyle = "#5196fc";
     c.fillRect(-15, -mastL, 30, mastL);
     reset();
+    c.strokeStyle = "#5196fc";
+    c.lineWidth = 3;
     for (var i = 0; i < particles.length; i++) {
         var p = particles[i];
-        p.x += p.dx * ms;
-        p.y += p.dy * ms;
+        p.x += Math.cos(windRot) * windStrength * ms;
+        p.y += Math.sin(windRot) * windStrength * ms;
         p.life -= ms;
         if (p.life > 0) {
-            c.fillRect(p.x, p.y, 10, 10);
+            c.beginPath();
+            c.moveTo(p.x, p.y);
+            c.lineTo(p.x + 100 * Math.cos(windRot) * windStrength, p.y + 100 * Math.sin(windRot) * windStrength);
+            c.stroke();
+            //c.fillRect(p.x, p.y, 10, 10);
         } else {
             particles.splice(i, 1);
             i--;
