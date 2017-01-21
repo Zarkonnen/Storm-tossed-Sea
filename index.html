@@ -102,7 +102,7 @@ function tick(ms) {
             var collidingWithShip = false;
             for (var j = 0; j < w.colliders.length; j++) {
                 var coll = w.colliders[j];
-                var dx = -Math.pow(Math.abs(coll.d) / 200, 2) * 40;
+                var dx = -Math.pow(Math.abs(coll.d) / 200, 2) * 40 - coll.r / 2;
                 coll.x = w.x + Math.cos(w.angle) * dx - Math.sin(w.angle) * coll.d;
                 coll.y = w.y + Math.sin(w.angle) * dx + Math.cos(w.angle) * coll.d;
                 for (var k = 0; k < shipColliders.length; k++) {
@@ -116,15 +116,6 @@ function tick(ms) {
                 var waveForce = Math.sin(shipRot - w.angle) * w.size * 0.1;
                 shipTilt += waveForce;
             }
-            // Are we within the wave? Uh. Let's have 3 colliders for the ship, and like 7 for the wave...
-            /*var shipX = 1000;
-            var shipY = 1000;
-            var d = Math.sqrt((shipX - w.x) * (shipX - w.x) + (shipY - w.y) * (shipY - w.y));
-            if (d < 350) {
-                var closeness = Math.min(1, (350 - d) * 0.005);
-                var waveForce = Math.sin(shipRot - w.angle) * w.size * 0.1 * closeness;
-                shipTilt += waveForce;
-            }*/
         }
     }
     
@@ -201,12 +192,12 @@ function tick(ms) {
                 j--;
             }
         }
-        for (var j = 0; j < w.colliders.length; j++) {
+        /*for (var j = 0; j < w.colliders.length; j++) {
             c.fillStyle = "#ff8800";
             c.beginPath();
             c.arc(w.colliders[j].x, w.colliders[j].y, w.colliders[j].r / 2, 0, 2 * Math.PI, false);
             c.fill();
-        }
+        }*/
     }
     
     reset();
@@ -249,12 +240,12 @@ function tick(ms) {
         }
     }
     reset();
-    c.fillStyle = "red";
+    /*c.fillStyle = "red";
     for (var i = 0; i < shipColliders.length; i++) {
         c.beginPath();
         c.arc(shipColliders[i].x, shipColliders[i].y, shipColliders[i].r, 0, 2 * Math.PI, false);
         c.fill();
-    }
+    }*/
     
     /*c.resetTransform();
     var darkening = Math.min(1, Math.abs(shipTilt) / (Math.PI / 2));
