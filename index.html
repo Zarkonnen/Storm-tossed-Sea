@@ -18,7 +18,7 @@ var shipRot = 0;
 var shipTilt = 0;
 var t = 0;
 var windRot = 0.7;
-var windStrength = 0.1;
+var windStrength = 1.1;
 var waveRot = 0.8;
 var waveStrength = 0.7;
 
@@ -97,26 +97,26 @@ function tick(ms) {
     reset();
     for (var i = 0; i < waves.length; i++) {
         var w = waves[i];
-        for (var xx = 0; xx < ms * 0.35; xx++) {
-            var dy = (Math.random() - 0.5) * 100 * w.size;
-            var dx = -Math.pow(Math.abs(dy) / 150, 2) * 40;
+        for (var xx = 0; xx < ms; xx++) {
+            var dy = (Math.random() - 0.5) * 200 * w.size;
+            var dx = -Math.pow(Math.abs(dy) / 200, 2) * 40;
             w.bubbles.push({
                 x: w.x + Math.cos(w.angle) * dx - Math.sin(w.angle) * dy,
                 y: w.y + Math.sin(w.angle) * dx + Math.cos(w.angle) * dy,
                 life: 200 + Math.random() * 600 - Math.abs(dy),
                 age: 0,
-                size: 15 * w.size - Math.abs(dy) / 6
+                size: 15 * w.size - Math.abs(dy) / 12
             });
         }
-        for (var xx = 0; xx < ms * 0.05; xx++) {
-            var dy = (Math.random() - 0.5) * 80 * w.size;
-            var dx = -Math.pow(Math.abs(dy) / 150, 2) * 40 - 20 * w.size;
+        for (var xx = 0; xx < ms * 0.1; xx++) {
+            var dy = (Math.random() - 0.5) * 170 * w.size;
+            var dx = -Math.pow(Math.abs(dy) / 200, 2) * 40 - 20 * w.size;
             w.darkBubbles.push({
                 x: w.x + Math.cos(w.angle) * dx - Math.sin(w.angle) * dy,
                 y: w.y + Math.sin(w.angle) * dx + Math.cos(w.angle) * dy,
                 life: 300 + Math.random() * 600 - Math.abs(dy),
                 age: 0,
-                size: 40 * w.size - Math.abs(dy) / 2
+                size: 40 * w.size - Math.abs(dy) / 4
             });
         }
         for (var j = 0; j < w.darkBubbles.length; j++) {
@@ -204,6 +204,12 @@ function tick(ms) {
             i--;
         }
     }
+    
+    c.resetTransform();
+    var darkening = Math.min(1, Math.abs(shipTilt) / (Math.PI / 2));
+    darkening *= darkening;
+    c.fillStyle = "rgba(16, 29, 48, " + darkening + ")";
+    c.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 var images = {};
