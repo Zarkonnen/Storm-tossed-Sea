@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html style="margin: 0; padding: 0;">
     <head>
-        <title>Game</title>
+        <title>Storm-Tossed Sea</title>
         <script src="jquery-3.1.1.min.js"></script>
         <script src="howler.min.js"></script>
     </head>
@@ -30,6 +30,7 @@ sWaves.loop(true);
 sWaves.play();
 
 // State
+var help = true;
 var shipRot = 0;
 var shipTilt = 0;
 var dShipTilt = 0;
@@ -103,9 +104,11 @@ function tick(ms) {
 
     if (down("A")) {
         shipRot -= ms * 0.001;
+        help = false;
     }
     if (down("D")) {
         shipRot += ms * 0.001;
+        help = false;
     }
 
     t += ms;
@@ -394,7 +397,11 @@ function tick(ms) {
             i--;
         }
     }
-    reset();
+    c.resetTransform();
+    if (help) {
+        c.fillStyle = "#5196fc";
+        c.fillText("Storm-tossed Sea. A/D to turn ship.", 20, 20);
+    }
     /*c.fillStyle = "red";
     for (var i = 0; i < shipColliders.length; i++) {
         c.beginPath();
