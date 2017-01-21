@@ -23,9 +23,9 @@ var waveRot = 0.8;
 var waveStrength = 0.7;
 
 var shipColliders = [
-    {x: 1000, y: 1000, r: 55},
-    {x: 0, y: 0, r: 40},
-    {x: 0, y: 0, r: 40}
+    {x: 1000, y: 1000, r: 28},
+    {x: 0, y: 0, r: 20},
+    {x: 0, y: 0, r: 20}
 ];
 
 var particles = [];
@@ -82,10 +82,10 @@ function tick(ms) {
         });
     }
     
-    shipColliders[1].x = 1000 + Math.cos(shipRot) * 120;
-    shipColliders[1].y = 1000 + Math.sin(shipRot) * 120;
-    shipColliders[2].x = 1000 - Math.cos(shipRot) * 120;
-    shipColliders[2].y = 1000 - Math.sin(shipRot) * 120;
+    shipColliders[1].x = 1000 + Math.cos(shipRot) * 60;
+    shipColliders[1].y = 1000 + Math.sin(shipRot) * 60;
+    shipColliders[2].x = 1000 - Math.cos(shipRot) * 60;
+    shipColliders[2].y = 1000 - Math.sin(shipRot) * 60;
     
     // Forces on the ship.
     var windForce = Math.sin(shipRot - windRot) * windStrength * 0.35;
@@ -202,6 +202,7 @@ function tick(ms) {
     
     reset();
     c.translate(1000, 1000);
+    c.scale(0.5, 0.5);
     c.rotate(shipRot);
     var shipN = 0;
     if (shipTilt < -Math.PI / 12) {
