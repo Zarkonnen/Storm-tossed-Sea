@@ -6,7 +6,7 @@
         <script src="howler.min.js"></script>
     </head>
     <body style="margin: 0; padding: 0; background: #101d30; text-align: center;">
-        <canvas width="500" height="500" allowfullscreen="true" id="gameCanvas" style="margin-top: 100px;"></canvas>
+        <canvas width="500" height="500" allowfullscreen="true" id="gameCanvas" style="margin-top: 50px;"></canvas>
         <script>
 
 function hwl(name, volume) {
@@ -47,6 +47,31 @@ var lightningP = 0;
 var lightning = 0;
 var sWavesVol = 0.001;
 var dead = false;
+var deadTimeout = 0;
+
+function restart() {
+    help = true;
+    shipRot = 0;
+    shipTilt = 0;
+    dShipTilt = 0;
+    t = 0;
+    windRot = Math.random() * Math.PI * 2;
+    windRotTarget = Math.random() * Math.PI * 2;
+    windStrength = 0.5;
+    waveRot = Math.random() * Math.PI * 2;
+    waveRotTarget = Math.random() * Math.PI * 2;
+    waveStrength = 0.1
+    waveP = 0.0002;
+    sCreakVol = 0.001;
+    lightningP = 0;
+    lightning = 0;
+    sWavesVol = 0.001;
+    dead = false;
+    deadTimeout = 0;
+    partices = [];
+    waves = [];
+    wavelets = [];
+}
 
 var shipColliders = [
     {x: 1000, y: 1000, r: 28},
@@ -60,7 +85,8 @@ var wavelets = [];
 
 function reset() {
     c.resetTransform();
-    c.scale(0.25, 0.25);
+    var scale = canvas.width / 2000.0;
+    c.scale(scale, scale);
 }
 
 function tick(ms) {
@@ -78,6 +104,10 @@ function tick(ms) {
         c.resetTransform();
         c.fillStyle = "#101d30";
         c.fillRect(0, 0, canvas.width, canvas.height);
+        deadTimeout += ms;
+        if (deadTimeout >= 3000) {
+            restart();
+        }
         return;
     }
 
@@ -191,7 +221,7 @@ function tick(ms) {
     
     // Forces on the ship.
     var fShipTilt = 0;
-    var windForce = Math.sin(shipRot - windRot) * windStrength * 0.00005;
+    var windForce = Math.sin(shipRot - windRot) * windStrength * 0.00003;
     fShipTilt = windForce;
     for (var i = 0; i < waves.length; i++) {
         var w = waves[i];
@@ -215,7 +245,7 @@ function tick(ms) {
                 }
             }
             if (collidingWithShip) {
-                var waveForce = Math.sin(shipRot - w.angle) * w.size * 0.000015;
+                var waveForce = Math.sin(shipRot - w.angle) * w.size * 0.00002;
                 fShipTilt += waveForce;
                 sWavesVol += (Math.abs(Math.sin(shipRot - w.angle)) * 0.3 + 0.4) * 0.001 * ms;
             }
@@ -229,7 +259,7 @@ function tick(ms) {
     fShipTilt -= shipTilt * 0.0001;
     // Friction
     fShipTilt -= dShipTilt * 0.001;
-    sCreakVol = Math.max(Math.min(1, Math.abs(fShipTilt * fShipTilt * 2000000000)), sCreakVol * 0.95);
+    sCreakVol = Math.max(Math.min(1, Math.abs(fShipTilt * fShipTilt * 4000000000)), sCreakVol * 0.95);
     sCreaking.volume(sCreakVol);
     
     dShipTilt += fShipTilt * ms;
@@ -401,7 +431,10 @@ function tick(ms) {
     c.resetTransform();
     if (help) {
         c.fillStyle = "#5196fc";
-        c.fillText("Storm-tossed Sea. A/D to turn ship.", 20, 20);
+        c.font = "48px sans-serif";
+        c.fillText("Storm-tossed Sea", canvas.width / 2 - c.measureText("Storm-tossed Sea").width / 2, canvas.width / 3);
+        c.font = "24px sans-serif";
+        c.fillText("A & D to turn ship", canvas.width / 2 - c.measureText("A & D to turn ship").width / 2, canvas.width / 3 + 48);
     }
     /*c.fillStyle = "red";
     for (var i = 0; i < shipColliders.length; i++) {
@@ -497,6 +530,15 @@ function nextFrame() {
 
 // Once everything is set up, start game loop.
 requestAnimationFrame(nextFrame);
+
+jQuery(window).resize(function() {
+    canvas.width = window.innerHeight - 100;
+    canvas.height = window.innerHeight - 100;
+});
+jQuery(window).ready(function() {
+    canvas.width = window.innerHeight - 100;
+    canvas.height = window.innerHeight - 100;
+});
  
 /*canvas.addEventListener("click", function() {
     if (canvas.webkitRequestFullScreen) {
